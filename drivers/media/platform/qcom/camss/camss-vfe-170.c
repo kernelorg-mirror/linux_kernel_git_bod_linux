@@ -409,7 +409,7 @@ static int vfe_get_output(struct vfe_line *line)
 	spin_lock_irqsave(&vfe->output_lock, flags);
 
 	output = &line->output;
-	if (output->state != VFE_OUTPUT_OFF) {
+	if (output->state > VFE_OUTPUT_RESERVED) {
 		dev_err(vfe->camss->dev, "Output is running\n");
 		goto error;
 	}
@@ -462,7 +462,7 @@ static int vfe_enable_output(struct vfe_line *line)
 
 	ops->reg_update_clear(vfe, line->id);
 
-	if (output->state != VFE_OUTPUT_OFF) {
+	if (output->state > VFE_OUTPUT_RESERVED) {
 		dev_err(vfe->camss->dev, "Output is not in reserved state %d\n",
 			output->state);
 		spin_unlock_irqrestore(&vfe->output_lock, flags);
@@ -535,7 +535,7 @@ static int vfe_enable(struct vfe_line *line)
 {
 	struct vfe_device *vfe = to_vfe(line);
 	int ret;
-
+dev_info(vfe->camss->dev, "%s %s\n", __func__, __FILE__);
 	mutex_lock(&vfe->stream_lock);
 
 	if (!vfe->stream_count)
@@ -546,12 +546,16 @@ static int vfe_enable(struct vfe_line *line)
 	mutex_unlock(&vfe->stream_lock);
 
 	ret = vfe_get_output(line);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_info(vfe->camss->dev, "%s %s vfe_get_output %d\n", __func__, __FILE__, ret);
 		goto error_get_output;
+	}
 
 	ret = vfe_enable_output(line);
-	if (ret < 0)
+	if (ret < 0){
+		dev_info(vfe->camss->dev, "%s %s vfe_enable_output %d\n", __func__, __FILE__, ret);
 		goto error_enable_output;
+	}
 
 	vfe->was_streaming = 1;
 

@@ -370,6 +370,7 @@ static int vfe_enable(struct vfe_line *line)
 	struct vfe_device *vfe = to_vfe(line);
 	int ret;
 
+dev_info(vfe->camss->dev, "%s %s\n", __func__, __FILE__);
 	mutex_lock(&vfe->stream_lock);
 
 	if (!vfe->stream_count)
