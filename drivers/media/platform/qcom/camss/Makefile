@@ -29,3 +29,11 @@ qcom-camss-objs += \
 		camss-format.o \
 
 obj-$(CONFIG_VIDEO_QCOM_CAMSS) += qcom-camss.o
+
+qcom-camss-icp-objs += camss-icp.o \
+		       camss-icp-hfi.o
+obj-$(CONFIG_VIDEO_QCOM_CAMSS_HARD_ISP) += qcom-camss-icp.o
+
+qcom-camss-bps-objs += camss-bps.o \
+		       camss-bps-cmd.o
+obj-$(CONFIG_VIDEO_QCOM_CAMSS_HARD_ISP) += qcom-camss-bps.o
