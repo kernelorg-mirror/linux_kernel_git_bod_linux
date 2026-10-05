@@ -607,34 +607,34 @@ u32 vfe_hw_version(struct vfe_device *vfe)
 }
 
 /*
- * vfe_buf_done - Process write master done interrupt
- * @vfe: VFE Device
- * @wm: Write master id
+ * vfe_output_done - Retire the filled buffer of one output
+ * @vfe: VFE device
+ * @line: VFE line
+ * @output: VFE output whose write masters completed a frame
+ * @ts: completion timestamp
+ *
+ * Called with output_lock held. Hands the next pending buffer to the write
+ * masters.
+ *
+ * Return the filled buffer for the caller to complete once the lock is
+ * dropped, or NULL if none was queued
  */
-void vfe_buf_done(struct vfe_device *vfe, int wm)
+static struct camss_buffer *vfe_output_done(struct vfe_device *vfe,
+					    struct vfe_line *line,
+					    struct vfe_output *output, u64 ts)
 {
-	struct vfe_line *line = &vfe->line[vfe->wm_output_map[wm]];
 	const struct vfe_hw_ops *ops = vfe->res->hw_ops;
 	struct camss_buffer *ready_buf;
-	struct vfe_output *output;
-	unsigned long flags;
 	u32 index;
-	u64 ts = ktime_get_ns();
-
-	spin_lock_irqsave(&vfe->output_lock, flags);
-
-	if (vfe->wm_output_map[wm] == VFE_LINE_NONE) {
-		dev_err_ratelimited(vfe->camss->dev,
-				    "Received wm done for unmapped index\n");
-		goto out_unlock;
-	}
-	output = &vfe->line[vfe->wm_output_map[wm]].output[0];
 
 	ready_buf = output->buf[0];
 	if (!ready_buf) {
-		dev_err_ratelimited(vfe->camss->dev,
-				    "Missing ready buf %d!\n", output->state);
-		goto out_unlock;
+		/* only the first output must keep up; the others may starve */
+		if (output == &line->output[0])
+			dev_err_ratelimited(vfe->camss->dev,
+					    "Missing ready buf %d!\n",
+					    output->state);
+		return NULL;
 	}
 
 	ready_buf->vb.vb2_buf.timestamp = ts;
@@ -659,14 +659,40 @@ void vfe_buf_done(struct vfe_device *vfe, int wm)
 		output->gen2.active_num--;
 	}
 
-	spin_unlock_irqrestore(&vfe->output_lock, flags);
+	return ready_buf;
+}
 
-	vb2_buffer_done(&ready_buf->vb.vb2_buf, VB2_BUF_STATE_DONE);
+/*
+ * vfe_buf_done - Process write master done interrupt
+ * @vfe: VFE Device
+ * @wm: Write master id
+ */
+void vfe_buf_done(struct vfe_device *vfe, int wm)
+{
+	struct camss_buffer *ready[MSM_VFE_NUM_OUTPUTS] = { };
+	struct vfe_line *line;
+	unsigned long flags;
+	unsigned int o;
+	u64 ts = ktime_get_ns();
 
-	return;
+	spin_lock_irqsave(&vfe->output_lock, flags);
+
+	if (vfe->wm_output_map[wm] == VFE_LINE_NONE) {
+		dev_err_ratelimited(vfe->camss->dev,
+				    "Received wm done for unmapped index\n");
+		goto out_unlock;
+	}
+	line = &vfe->line[vfe->wm_output_map[wm]];
+
+	ready[0] = vfe_output_done(vfe, line, &line->output[0], ts);
 
 out_unlock:
 	spin_unlock_irqrestore(&vfe->output_lock, flags);
+
+	for (o = 0; o < MSM_VFE_NUM_OUTPUTS; o++)
+		if (ready[o])
+			vb2_buffer_done(&ready[o]->vb.vb2_buf,
+					VB2_BUF_STATE_DONE);
 }
 
 /*
