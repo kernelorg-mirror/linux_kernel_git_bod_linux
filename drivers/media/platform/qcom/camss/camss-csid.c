@@ -721,8 +721,6 @@ static int csid_set_power(struct v4l2_subdev *sd, int on)
 			return ret;
 		}
 
-		csid->phy.need_vc_update = true;
-
 		enable_irq(csid->irq);
 
 		ret = csid->res->hw_ops->reset(csid);
@@ -778,14 +776,11 @@ static int csid_set_stream(struct v4l2_subdev *sd, int enable)
 			return -ENOLINK;
 	}
 
-	if (csid->phy.need_vc_update) {
-		/* Set to -1 as we want to do atomic_inc_return to read */
-		for (i = 0; i < MSM_CSID_MAX_SRC_STREAMS; i++)
-			atomic_set(&csid->sof_seq[i], -1);
+	/* Set to -1 as we want to do atomic_inc_return to read */
+	for (i = 0; i < MSM_CSID_MAX_SRC_STREAMS; i++)
+		atomic_set(&csid->sof_seq[i], -1);
 
-		csid->res->hw_ops->configure_stream(csid, enable);
-		csid->phy.need_vc_update = false;
-	}
+	csid->res->hw_ops->configure_stream(csid, enable);
 
 	return 0;
 }
@@ -1311,8 +1306,6 @@ static int csid_link_setup(struct media_entity *entity,
 			csid->phy.en_vc |= BIT(local->index - 1);
 		else
 			csid->phy.en_vc &= ~BIT(local->index - 1);
-
-		csid->phy.need_vc_update = true;
 
 		dev_dbg(dev, "%s: Enabled CSID virtual channels mask 0x%x\n",
 			__func__, csid->phy.en_vc);
