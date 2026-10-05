@@ -9,4 +9,5 @@ config VIDEO_QCOM_CAMSS
 	select VIDEOBUF2_VMALLOC
 	select V4L2_FWNODE
 	select GENERIC_PHY
+	select V4L2_ISP
 	imply PHY_QCOM_MIPI_CSI2
