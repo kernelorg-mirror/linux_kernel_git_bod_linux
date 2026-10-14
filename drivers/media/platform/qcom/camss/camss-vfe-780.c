@@ -416,4 +416,5 @@ const struct vfe_hw_ops vfe_ops_780 = {
 	.vfe_output_start = vfe_output_start,
 	.vfe_output_stop = vfe_output_stop,
 	.vfe_output_update = vfe_output_update,
+	.vfe_output_buf_done = vfe_output_buf_done,
 };
