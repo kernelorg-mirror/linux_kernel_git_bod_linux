@@ -5053,6 +5053,24 @@ void camss_reg_update(struct camss *camss, int hw_id, int port_id, bool is_clear
 	}
 }
 
+struct vfe_output *vfe_comp_group_output(struct vfe_device *vfe, unsigned int group)
+{
+	unsigned int i, j;
+
+	for (i = 0; i < vfe->res->line_num; i++) {
+		struct vfe_line *line = &vfe->line[i];
+
+		for (j = 0; j < line->num_outputs; j++) {
+			struct vfe_output *output = &line->output[j];
+
+			if (output->wm_num && output->comp_group == group)
+				return output;
+		}
+	}
+
+	return NULL;
+}
+
 void camss_buf_done(struct camss *camss, struct camss_buf_done_info *info)
 {
 	struct vfe_device *vfe;
