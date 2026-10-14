@@ -5073,12 +5073,27 @@ struct vfe_output *vfe_comp_group_output(struct vfe_device *vfe, unsigned int gr
 
 void camss_buf_done(struct camss *camss, struct camss_buf_done_info *info)
 {
+	unsigned long status = info->status;
+	const struct vfe_hw_ops *ops;
+	struct vfe_output *output;
 	struct vfe_device *vfe;
+	unsigned int group;
 
-	if (info->hw_id < camss->res->vfe_num) {
-		vfe = &camss->vfe[info->hw_id];
+	if (info->hw_id >= camss->res->vfe_num)
+		return;
 
-		vfe->res->hw_ops->vfe_buf_done(vfe, info->port_id);
+	vfe = &camss->vfe[info->hw_id];
+	ops = vfe->res->hw_ops;
+
+	if (ops->vfe_buf_done) {
+		ops->vfe_buf_done(vfe, info->port_id);
+		return;
+	}
+
+	for_each_set_bit(group, &status, BITS_PER_TYPE(u32)) {
+		output = vfe_comp_group_output(vfe, group);
+		if (output)
+			ops->vfe_output_buf_done(vfe, output);
 	}
 }
 
