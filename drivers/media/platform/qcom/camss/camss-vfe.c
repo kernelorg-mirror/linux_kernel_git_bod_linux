@@ -2170,6 +2170,7 @@ int msm_vfe_subdev_init(struct camss *camss, struct vfe_device *vfe,
 
 		l->num_outputs = 1;
 		l->output[0].line = l;
+		l->output[0].pad = MSM_VFE_PAD_SRC;
 
 		l->output[0].wm_num = 1;
 		l->output[0].wm[0].bus_client = l->id;
@@ -2488,6 +2489,7 @@ void vfe_add_output(struct vfe_output *output, u8 pad, u8 comp_group,
 {
 	unsigned int i;
 
+	output->pad = pad;
 	output->comp_group = comp_group;
 	output->wm_num = wm_num;
 	for (i = 0; i < wm_num; i++) {
