@@ -986,7 +986,8 @@ int vfe_put_output(struct vfe_line *line)
 	for (i = 0; i < output->wm_num; i++)
 		vfe_release_wm(vfe, output->wm[i].bus_client);
 
-	output->state = VFE_OUTPUT_OFF;
+	for (i = 0; i < line->num_outputs; i++)
+		line->output[i].state = VFE_OUTPUT_OFF;
 
 	spin_unlock_irqrestore(&vfe->output_lock, flags);
 	return 0;
@@ -996,17 +997,24 @@ static void vfe_disable_output(struct vfe_line *line)
 {
 	struct vfe_device *vfe = to_vfe(line);
 	const struct vfe_hw_ops *ops = vfe->res->hw_ops;
-	struct vfe_output *output = &line->output[0];
 	unsigned long flags;
-	unsigned int i;
+	unsigned int i, o;
 
 	spin_lock_irqsave(&vfe->output_lock, flags);
-	if (ops->vfe_output_stop)
-		ops->vfe_output_stop(vfe, output);
-	else
-		for (i = 0; i < output->wm_num; i++)
-			ops->vfe_wm_stop(vfe, output->wm[i].bus_client, line);
-	output->gen2.active_num = 0;
+	for (o = 0; o < line->num_outputs; o++) {
+		struct vfe_output *output = &line->output[o];
+
+		/* the first output is always on; the others only if they streamed */
+		if (o && output->state != VFE_OUTPUT_ON)
+			continue;
+
+		if (ops->vfe_output_stop)
+			ops->vfe_output_stop(vfe, output);
+		else
+			for (i = 0; i < output->wm_num; i++)
+				ops->vfe_wm_stop(vfe, output->wm[i].bus_client, line);
+		output->gen2.active_num = 0;
+	}
 	spin_unlock_irqrestore(&vfe->output_lock, flags);
 }
 
