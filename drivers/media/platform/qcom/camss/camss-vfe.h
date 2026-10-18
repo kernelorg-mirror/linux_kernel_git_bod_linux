@@ -28,7 +28,7 @@
 #define MSM_VFE_PAD_NUM_RDI 2
 #define MSM_VFE_PAD_NUM_PIX 6
 #define MSM_VFE_MAX_PADS MSM_VFE_PAD_NUM_PIX
-#define MSM_VFE_NUM_OUTPUTS 1
+#define MSM_VFE_NUM_OUTPUTS (MSM_VFE_MAX_PADS - 1)	/* every pad but the sink */
 
 #define MSM_VFE_IMAGE_MASTERS_NUM 7
 #define MSM_VFE_COMPOSITE_IRQ_NUM 4
