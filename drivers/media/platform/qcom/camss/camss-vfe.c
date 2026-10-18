@@ -888,15 +888,17 @@ int vfe_reset(struct vfe_device *vfe)
 
 static void vfe_init_outputs(struct vfe_device *vfe)
 {
-	int i;
+	int i, o;
 
 	for (i = 0; i < vfe->res->line_num; i++) {
-		struct vfe_output *output = &vfe->line[i].output[0];
+		for (o = 0; o < MSM_VFE_NUM_OUTPUTS; o++) {
+			struct vfe_output *output = &vfe->line[i].output[o];
 
-		output->state = VFE_OUTPUT_OFF;
-		output->buf[0] = NULL;
-		output->buf[1] = NULL;
-		INIT_LIST_HEAD(&output->pending_bufs);
+			output->state = VFE_OUTPUT_OFF;
+			output->buf[0] = NULL;
+			output->buf[1] = NULL;
+			INIT_LIST_HEAD(&output->pending_bufs);
+		}
 	}
 }
 
@@ -2163,22 +2165,25 @@ int msm_vfe_subdev_init(struct camss *camss, struct vfe_device *vfe,
 
 	for (i = VFE_LINE_RDI0; i < vfe->res->line_num; i++) {
 		struct vfe_line *l = &vfe->line[i];
+		unsigned int o;
+
+		for (o = 0; o < MSM_VFE_NUM_OUTPUTS; o++) {
+			l->output[o].line = l;
+			l->output[o].video_out.camss = camss;
+			init_completion(&l->output[o].sof);
+			init_completion(&l->output[o].reg_update);
+		}
 
 		l->output[0].video_out.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-		l->output[0].video_out.camss = camss;
 		l->id = i;
 
 		l->num_outputs = 1;
-		l->output[0].line = l;
 		l->output[0].pad = MSM_VFE_PAD_SRC;
 
 		l->output[0].wm_num = 1;
 		l->output[0].wm[0].bus_client = l->id;
 
 		l->num_pads = MSM_VFE_PAD_NUM_RDI;
-
-		init_completion(&l->output[0].sof);
-		init_completion(&l->output[0].reg_update);
 
 
 	}
