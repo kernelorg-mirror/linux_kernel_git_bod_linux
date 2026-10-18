@@ -667,6 +667,18 @@ out_unlock:
 	spin_unlock_irqrestore(&vfe->output_lock, flags);
 }
 
+/*
+ * The first output starts the line. The others run only while their video
+ * node is streaming, and only if they write to memory.
+ */
+static bool vfe_output_wanted(struct vfe_line *line, struct vfe_output *output)
+{
+	if (output == &line->output[0])
+		return true;
+
+	return output->wm_num && vb2_is_streaming(&output->video_out.vb2_q);
+}
+
 static int vfe_enable_one_output(struct vfe_line *line, struct vfe_output *output)
 {
 	struct vfe_device *vfe = to_vfe(line);
@@ -735,6 +747,9 @@ int vfe_enable_output_v2(struct vfe_line *line)
 	ops->reg_update_clear(vfe, line->id);
 
 	for (i = 0; i < line->num_outputs; i++) {
+		if (!vfe_output_wanted(line, &line->output[i]))
+			continue;
+
 		ret = vfe_enable_one_output(line, &line->output[i]);
 		if (ret)
 			break;
