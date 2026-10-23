@@ -141,6 +141,7 @@ struct csid_hw_ops {
 
 struct csid_subdev_resources {
 	bool is_lite;
+	bool frame_sync_en;
 	const struct csid_hw_ops *hw_ops;
 	const struct parent_dev_ops *parent_dev_ops;
 	const struct csid_formats *formats;
@@ -167,6 +168,8 @@ struct csid_device {
 	struct v4l2_ctrl_handler ctrls;
 	struct v4l2_ctrl *testgen_mode;
 	const struct csid_subdev_resources *res;
+	atomic_t frame_sync_users;
+	u32 frame_sync_seq;
 };
 
 struct camss_subdev_resources;
@@ -247,5 +250,13 @@ u32 csid_hw_version(struct csid_device *csid);
  */
 u32 csid_src_pad_code(struct csid_device *csid, u32 sink_code,
 		      unsigned int match_format_idx, u32 match_code);
+
+/*
+ * csid_frame_sync - Generate a frame sync event
+ * @csid: CSID device
+ *
+ *  Called from the CSID interrupt handler on SOF of the path driving the event.
+ */
+void csid_frame_sync(struct csid_device *csid);
 
 #endif /* QC_MSM_CAMSS_CSID_H */
