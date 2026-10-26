@@ -285,4 +285,13 @@ atomic_t *csid_get_sof_seq(struct media_pad *pad);
  */
 int csid_ipp_bayer_pattern(u32 code);
 
+/*
+ * csid_eof_event - Track EOF
+ * @csid: CSID device
+ * @id: CSID src-stream ID
+ *
+ *  Called from the CSID interrupt handler on EOF of the path driving the event.
+ */
+void csid_eof_event(struct csid_device *csid, unsigned int id);
+
 #endif /* QC_MSM_CAMSS_CSID_H */
