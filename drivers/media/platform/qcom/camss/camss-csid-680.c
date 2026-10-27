@@ -303,9 +303,9 @@ static void __csid_configure_rdi_irq(struct csid_device *csid, u8 enable, u8 rdi
 	val = readl(csid->base + CSID_CSI2_RDIN_IRQ_MASK(rdi));
 
 	if (enable)
-		val |= CSID_CSI2_RDIN_INFO_INPUT_SOF;
+		val |= CSID_CSI2_RDIN_INFO_INPUT_SOF | CSID_CSI2_RDIN_INFO_INPUT_EOF;
 	else
-		val &= ~CSID_CSI2_RDIN_INFO_INPUT_SOF;
+		val &= ~(CSID_CSI2_RDIN_INFO_INPUT_SOF | CSID_CSI2_RDIN_INFO_INPUT_EOF);
 
 	writel(val, csid->base + CSID_CSI2_RDIN_IRQ_MASK(rdi));
 }
@@ -412,6 +412,9 @@ static irqreturn_t csid_isr(int irq, void *dev)
 
 		if (val & CSID_CSI2_RDIN_INFO_INPUT_SOF)
 			csid_sof_event(csid, i);
+
+		if (val & CSID_CSI2_RDIN_INFO_INPUT_EOF)
+			csid_eof_event(csid, i);
 
 		if (val & CSID_CSI2_RDIN_RUP_DONE)
 			csid_rup_complete(csid, i);
