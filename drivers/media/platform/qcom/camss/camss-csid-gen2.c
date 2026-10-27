@@ -39,6 +39,7 @@
 						 + 0x10 * (rdi))
 
 #define		RDIN_IRQ_INFO_INPUT_SOF		BIT(12)
+#define		RDIN_IRQ_INFO_INPUT_EOF		BIT(9)
 
 #define CSID_TOP_IRQ_STATUS	0x70
 #define		TOP_IRQ_STATUS_RESET_DONE 0
@@ -329,7 +330,7 @@ static void __csid_configure_rdi_irq(struct csid_device *csid, u8 enable, u8 rdi
 	u32 val = 0;
 
 	if (enable)
-		val = RDIN_IRQ_INFO_INPUT_SOF;
+		val = RDIN_IRQ_INFO_INPUT_SOF | RDIN_IRQ_INFO_INPUT_EOF;
 
 	writel_relaxed(val, csid->base + CSID_CSI2_RDIN_IRQ_MASK(rdi));
 }
@@ -388,6 +389,9 @@ static irqreturn_t csid_isr(int irq, void *dev)
 			writel_relaxed(val, csid->base + CSID_CSI2_RDIN_IRQ_CLEAR(i));
 			if (val & RDIN_IRQ_INFO_INPUT_SOF)
 				csid_sof_event(csid, i);
+
+			if (val & RDIN_IRQ_INFO_INPUT_EOF)
+				csid_eof_event(csid, i);
 		}
 
 	val = 1 << IRQ_CMD_CLEAR;
