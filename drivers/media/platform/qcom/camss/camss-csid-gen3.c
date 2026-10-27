@@ -61,6 +61,7 @@
 
 #define CSID_CSI2_RDIN_IRQ_MASK(rdi)	(0xF0 + 0x10 * (rdi))
 #define		INFO_INPUT_SOF_IRQ		BIT(12)
+#define		INFO_INPUT_EOF_IRQ		BIT(9)
 
 #define CSID_CSI2_RDIN_IRQ_CLEAR(rdi)	(0xF4 + 0x10 * (rdi))
 #define CSID_CSI2_RDIN_IRQ_SET(rdi)	(0xF8 + 0x10 * (rdi))
@@ -228,7 +229,7 @@ static void __csid_configure_rdi_irq(struct csid_device *csid, u8 enable, u8 rdi
 	u32 val = 0;
 
 	if (enable)
-		val = INFO_INPUT_SOF_IRQ;
+		val = INFO_INPUT_SOF_IRQ | INFO_INPUT_EOF_IRQ;
 
 	writel(val, csid->base + CSID_CSI2_RDIN_IRQ_MASK(rdi));
 
@@ -305,6 +306,9 @@ static irqreturn_t csid_isr(int irq, void *dev)
 
 			if (val & INFO_INPUT_SOF_IRQ)
 				csid_sof_event(csid, i);
+
+			if (val & INFO_INPUT_EOF_IRQ)
+				csid_eof_event(csid, i);
 
 			if (val & RUP_DONE_IRQ_STATUS)
 				/* clear the reg update bit */
